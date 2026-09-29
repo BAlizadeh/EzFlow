@@ -24,27 +24,23 @@ jobs:
           mkdir -p project_source
           unzip -o EzFlow-Android-Project.zip -d project_source
           
-          # یافتن پوشه‌ای که فایل تنظیمات پروژه درون آن است
-          PROJECT_DIR=$(find project_source -name "build.gradle" -o -name "build.gradle.kts" -o -name "settings.gradle" -o -name "settings.gradle.kts" | head -n 1 | xargs dirname)
+          # پیدا کردن مسیر ریشه پروژه که settings.gradle یا build.gradle دارد
+          PROJECT_DIR=$(find project_source -name "settings.gradle" -o -name "settings.gradle.kts" -o -name "build.gradle" | head -n 1 | xargs dirname)
           
-          if [ -z "$PROJECT_DIR" ]; then
-            echo "Error: build.gradle not found in zip!"
-            exit 1
-          fi
-          
-          echo "Project directory found at: $PROJECT_DIR"
+          echo "Project directory: $PROJECT_DIR"
           cd "$PROJECT_DIR"
           
-          # اگر پوشه بالاتر حاوی gradlew بود یا در همین مسیر:
+          # استفاده از نسخه پایدار Gradle 8.7 به جای نسخه 9
           if [ ! -f "gradlew" ]; then
-            gradle wrapper
+            gradle wrapper --gradle-version 8.7
           fi
           
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: EzFlow-Debug-APK
-          path: project_source/**/build/outputs/apk/debug/*.apk
+          path: project_source/**/build/outputs/apk/**/*.apk

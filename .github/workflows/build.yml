@@ -19,28 +19,27 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Setup Gradle 8.7
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.7'
+
       - name: Extract & Build APK
         run: |
           mkdir -p project_source
           unzip -o EzFlow-Android-Project.zip -d project_source
           
-          # پیدا کردن مسیر ریشه پروژه که settings.gradle یا build.gradle دارد
-          PROJECT_DIR=$(find project_source -name "settings.gradle" -o -name "settings.gradle.kts" -o -name "build.gradle" | head -n 1 | xargs dirname)
+          cd project_source/EzFlow-Android-Project
           
-          echo "Project directory: $PROJECT_DIR"
-          cd "$PROJECT_DIR"
+          # قبول خودکار لایسنس‌های اندروید
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
           
-          # استفاده از نسخه پایدار Gradle 8.7 به جای نسخه 9
-          if [ ! -f "gradlew" ]; then
-            gradle wrapper --gradle-version 8.7
-          fi
-          
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          # اجرای کامپایل با Gradle 8.7
+          gradle assembleDebug --stacktrace
 
       - name: Upload APK
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: EzFlow-Debug-APK
-          path: project_source/**/build/outputs/apk/**/*.apk
+          path: project_source/EzFlow-Android-Project/app/build/outputs/apk/debug/*.apk

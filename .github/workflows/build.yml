@@ -18,24 +18,24 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Unzip Android Project
-        run: |
-          unzip -q EzFlow-Android-Project.zip -d source_dir
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
 
-      - name: Generate Wrapper and Build APK
+      - name: Unzip & Build APK
         run: |
-          cd source_dir/EzFlow-Android-Project
-          gradle wrapper
+          unzip -q EzFlow-Android-Project.zip -d build_dir
+          cd build_dir/EzFlow-Android-Project
+          gradle wrapper --gradle-version 8.7
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: EzFlow-APK
-          path: source_dir/EzFlow-Android-Project/app/build/outputs/apk/debug/app-debug.apk
+          name: EzFlow-App-APK
+          path: build_dir/EzFlow-Android-Project/app/build/outputs/apk/debug/app-debug.apk

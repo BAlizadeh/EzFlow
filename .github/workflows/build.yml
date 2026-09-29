@@ -24,21 +24,31 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Extract & Build APK
+      - name: Extract & Diagnose & Build APK
         run: |
           mkdir -p project_source
           unzip -o EzFlow-Android-Project.zip -d project_source
           
           cd project_source/EzFlow-Android-Project
           
-          # غیرفعال کردن توقف بیلد روی ارورهای Lint
-          sed -i '/android {/a \    lintOptions { abortOnError false; checkReleaseBuilds false }' app/build.gradle || true
+          echo "=== ROOT build.gradle ==="
+          cat build.gradle || true
           
+          echo "=== APP build.gradle ==="
+          cat app/build.gradle || true
+
           # قبول لایسنس‌های اندروید
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
-          
-          # اجرای بیلد
-          gradle assembleDebug --no-daemon --info || (gradle assembleDebug --stacktrace --no-daemon | grep -A 20 "FAILURE:" && exit 1)
+
+          # اجرای بیلد و ذخیره لاگ تمیز
+          gradle assembleDebug --no-daemon --info > build_output.log 2>&1 || BUILD_FAILED=true
+
+          if [ "$BUILD_FAILED" = true ]; then
+            echo "====================== ERROR LOGS ======================"
+            grep -E -C 3 "error:|FAILURE:|FAILED|What went wrong:|compileDebugJavaWithJavac" build_output.log | tail -n 50
+            echo "========================================================"
+            exit 1
+          fi
 
       - name: Upload APK
         if: always()
